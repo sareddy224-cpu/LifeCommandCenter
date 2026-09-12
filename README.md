@@ -1,12 +1,13 @@
-# Life Command Center v0.7 — Auth error visibility fix
+# Life Command Center v0.8 — Mobile Navigation Fix
 
-This build fixes authentication errors being hidden behind Netlify UI.
+Fixes the phone layout.
 
-Changes:
-- Supabase sign-up/sign-in errors are now shown directly inside the auth modal.
-- The auth modal is layered above app UI.
-- Sign-up validates email/password before calling Supabase.
-- If email confirmation is required, the modal tells you explicitly.
-- Successful auth messages also display in the modal.
+What changed:
+- Added a bottom mobile nav with Today, Inbox, Projects, All Tasks, and More.
+- Added a More sheet for Home, Family, Travel, Personal, and Account.
+- Hid the desktop sidebar on phones.
+- Moved the cloud/account control to the top-right so it no longer covers the app.
+- Added bottom safe-area spacing for iPhone.
+- Mobile nav highlights the current section.
 
-Deploy this version to the same Netlify site, hard-refresh, then try Create account again.
+Deploy this version to the same Netlify site and hard refresh/reopen on phone.

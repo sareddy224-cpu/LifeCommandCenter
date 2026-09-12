@@ -456,6 +456,31 @@ function startCloudPolling(){
 }
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")pullLatestCloud();});
 
+
+document.querySelectorAll(".mobileNavBtn[data-view]").forEach(btn=>{
+ btn.addEventListener("click",()=>switchView(btn.dataset.view));
+});
+const mobileMoreSheet=document.getElementById("mobileMoreSheet");
+document.getElementById("mobileMoreBtn")?.addEventListener("click",()=>{
+ mobileMoreSheet?.classList.add("show");
+});
+document.getElementById("closeMobileMore")?.addEventListener("click",()=>{
+ mobileMoreSheet?.classList.remove("show");
+});
+mobileMoreSheet?.addEventListener("click",(e)=>{
+ if(e.target===mobileMoreSheet) mobileMoreSheet.classList.remove("show");
+});
+document.querySelectorAll("#mobileMoreSheet [data-view]").forEach(btn=>{
+ btn.addEventListener("click",()=>{
+   mobileMoreSheet?.classList.remove("show");
+   switchView(btn.dataset.view);
+ });
+});
+document.getElementById("mobileAccountAction")?.addEventListener("click",()=>{
+ mobileMoreSheet?.classList.remove("show");
+ handleAccountAction();
+});
+
 async function initCloud(){
  if(!window.LCCCloud?.configured){
    setSyncState("local","Local mode");

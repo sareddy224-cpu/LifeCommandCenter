@@ -237,6 +237,28 @@
   </div>
 </div>
 
+
+<nav class="mobileBottomNav" aria-label="Mobile navigation">
+  <button type="button" data-view="today" class="mobileNavBtn active"><span>⌂</span><small>Today</small></button>
+  <button type="button" data-view="inbox" class="mobileNavBtn"><span>✦</span><small>Inbox</small></button>
+  <button type="button" data-view="projects" class="mobileNavBtn"><span>▦</span><small>Projects</small></button>
+  <button type="button" data-view="all" class="mobileNavBtn"><span>☰</span><small>All Tasks</small></button>
+  <button type="button" id="mobileMoreBtn" class="mobileNavBtn"><span>•••</span><small>More</small></button>
+</nav>
+
+<div id="mobileMoreSheet" class="mobileSheet">
+  <div class="mobileSheetCard">
+    <div class="sheetHandle"></div>
+    <div class="mobileSheetTitle">Life Command Center</div>
+    <button type="button" data-view="home">Home</button>
+    <button type="button" data-view="family">Family</button>
+    <button type="button" data-view="travel">Travel</button>
+    <button type="button" data-view="personal">Personal</button>
+    <button type="button" id="mobileAccountAction">☁️ Account</button>
+    <button type="button" id="closeMobileMore">Close</button>
+  </div>
+</div>
+
 <button id="mobileCloudBtn" class="cloudfloat" type="button" onclick="window.LCCAuthUI && window.LCCAuthUI.open()">☁️ Sign in</button>
 <div class="toast" id="toast"></div>
 <script src="cloud.js"></script>
