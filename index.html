@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Command Center</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">Life Command Center<span>less mental juggling</span><div id="syncPill" class="syncpill local">Local mode</div></div>
+    <nav class="nav">
+      <button class="active" data-view="today">Today</button>
+      <button data-view="inbox">Inbox <span id="inboxBadge" class="badge"></span></button>
+      <button data-view="tasks">All Tasks</button>
+      <button data-view="projects">Projects</button>
+      <button data-view="home">Home</button>
+      <button data-view="family">Family</button>
+      <button data-view="travel">Travel</button>
+      <button data-view="personal">Personal</button>
+    </nav>
+    <div class="accountbox">
+      <div id="accountEmail" class="accountemail">Not signed in</div>
+      <button id="accountBtn" class="secondary small">Sign in</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section id="today" class="view active">
+      <div class="top">
+        <div>
+          <div class="eyebrow" id="dateLabel"></div>
+          <h1 id="greeting">Good evening 👋</h1>
+          <div class="eyebrow">Here’s what deserves your attention.</div>
+        </div>
+        <button class="primary" data-action="quick-add">+ Quick Add</button>
+      </div>
+
+      <div class="searchbar">
+        <input id="globalSearch" placeholder="Search tasks and projects...">
+      </div>
+
+      <div class="stats">
+        <button class="stat" data-action="show-today"><b id="todayCount">0</b><span>for today</span></button>
+        <button class="stat" data-action="show-overdue"><b id="overdueCount">0</b><span>overdue</span></button>
+        <button class="stat" data-view-target="projects"><b id="projectCount">0</b><span>active projects</span></button>
+        <button class="stat" data-action="show-waiting"><b id="waitingCount">0</b><span>waiting on</span></button>
+      </div>
+
+      <div class="grid">
+        <div class="stack">
+          <div class="panel">
+            <div class="panelhead"><h2>Needs attention</h2><button class="linkbtn" data-action="show-overdue">See all</button></div>
+            <div id="attention" class="stack"></div>
+          </div>
+          <div class="panel">
+            <div class="panelhead"><h2>Today</h2><button class="linkbtn" data-action="show-today">See all</button></div>
+            <div id="todayTasks" class="stack"></div>
+          </div>
+          <div class="panel">
+            <div class="panelhead"><h2>Coming up</h2><button class="linkbtn" data-view-target="tasks">All tasks</button></div>
+            <div id="upcomingTasks" class="stack"></div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="panel">
+            <h2>Life Radar</h2>
+            <div id="radar" class="radar"></div>
+          </div>
+          <div class="panel">
+            <h2>What should I do next?</h2>
+            <p class="eyebrow">Pick the time you have. I’ll surface realistic actions.</p>
+            <div class="row">
+              <button class="secondary" data-recommend="15">15 min</button>
+              <button class="secondary" data-recommend="30">30 min</button>
+              <button class="secondary" data-recommend="60">1 hr</button>
+            </div>
+            <div id="recommendation" class="stack recommendation"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="inbox" class="view">
+      <div class="top">
+        <div><div class="eyebrow">Capture first, organize later</div><h1>Inbox</h1></div>
+        <button class="primary" data-action="quick-add">+ Add thought</button>
+      </div>
+      <div class="panel">
+        <div class="inboxbar">
+          <input id="inboxInput" placeholder="What’s on your mind? e.g. Buy fall clothes for Rudy">
+          <button class="primary" id="captureBtn">Capture</button>
+        </div>
+        <p class="eyebrow">Inbox items stay here until you turn them into a task or project.</p>
+        <div id="inboxList" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="tasks" class="view">
+      <div class="top">
+        <div><div class="eyebrow">Nothing disappears here</div><h1>All Tasks</h1></div>
+        <button class="primary" data-action="quick-add">+ Add Task</button>
+      </div>
+      <div class="panel">
+        <div class="filters">
+          <button class="chip active" data-filter="open">Open</button>
+          <button class="chip" data-filter="today">Today</button>
+          <button class="chip" data-filter="upcoming">Upcoming</button>
+          <button class="chip" data-filter="overdue">Overdue</button>
+          <button class="chip" data-filter="waiting">Waiting</button>
+          <button class="chip" data-filter="done">Completed</button>
+          <button class="chip" data-filter="all">All</button>
+        </div>
+        <div id="allTasks" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="projects" class="view">
+      <div class="top">
+        <div><div class="eyebrow">Big things, broken down</div><h1>Projects</h1></div>
+        <button class="primary" id="newProjectBtn">+ Project</button>
+      </div>
+      <div id="projectList" class="projectgrid"></div>
+    </section>
+
+    <section id="home" class="view category-view" data-category="Home"></section>
+    <section id="family" class="view category-view" data-category="Family"></section>
+    <section id="travel" class="view category-view" data-category="Travel"></section>
+    <section id="personal" class="view category-view" data-category="Personal"></section>
+  </main>
+</div>
+
+<!-- Quick Add -->
+<div class="modal" id="quickModal">
+  <div class="modalbox">
+    <div class="modalhead"><h2>Quick Add</h2><button class="iconbtn" data-close="quickModal">×</button></div>
+    <label>Task</label>
+    <input id="quickText" placeholder="e.g. Book hotel for Duluth">
+    <div class="row">
+      <div><label>Due date</label><input id="quickDate" type="date"></div>
+      <div><label>Priority</label>
+        <select id="quickPriority"><option>Medium</option><option>High</option><option>Low</option><option>Critical</option></select>
+      </div>
+    </div>
+    <div class="row">
+      <div><label>Project</label><select id="quickProject"></select></div>
+      <div><label>Status</label><select id="quickStatus"><option>Open</option><option>Waiting</option></select></div>
+    </div>
+    <div class="actions"><button class="secondary" data-close="quickModal">Cancel</button><button class="primary" id="quickSaveBtn">Add task</button></div>
+  </div>
+</div>
+
+<!-- Task editor -->
+<div class="modal" id="taskModal">
+  <div class="modalbox">
+    <div class="modalhead"><div><div class="eyebrow">Task</div><h2>Edit task</h2></div><button class="iconbtn" data-close="taskModal">×</button></div>
+    <input type="hidden" id="editTaskId">
+    <label>Title</label><input id="editTaskTitle">
+    <div class="row">
+      <div><label>Due date</label><input id="editTaskDate" type="date"></div>
+      <div><label>Priority</label><select id="editTaskPriority"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+    </div>
+    <div class="row">
+      <div><label>Project</label><select id="editTaskProject"></select></div>
+      <div><label>Status</label><select id="editTaskStatus"><option>Open</option><option>Waiting</option><option>Completed</option></select></div>
+    </div>
+    <div class="row">
+      <div><label>Category</label><select id="editTaskCategory"><option>Home</option><option>Family</option><option>Travel</option><option>Personal</option></select></div>
+      <div><label>Estimated time</label><select id="editTaskDuration"><option value="5">5 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="120">2+ hours</option></select></div>
+    </div>
+    <label>Notes</label><textarea id="editTaskNotes" rows="3" placeholder="Anything useful to remember..."></textarea>
+    <div class="actions split"><button class="dangerbtn" id="deleteTaskBtn">Delete</button><div><button class="secondary" data-close="taskModal">Cancel</button><button class="primary" id="saveTaskBtn">Save changes</button></div></div>
+  </div>
+</div>
+
+<!-- Project editor/detail -->
+<div class="modal" id="projectModal">
+  <div class="modalbox wide">
+    <div class="modalhead"><div><div class="eyebrow">Project workspace</div><h2 id="projectModalTitle"></h2></div><button class="iconbtn" data-close="projectModal">×</button></div>
+    <div id="projectDetail"></div>
+  </div>
+</div>
+
+<div class="modal" id="editProjectModal">
+  <div class="modalbox">
+    <div class="modalhead"><div><div class="eyebrow">Project</div><h2>Edit project</h2></div><button class="iconbtn" data-close="editProjectModal">×</button></div>
+    <input type="hidden" id="editProjectId">
+    <label>Name</label><input id="editProjectName">
+    <label>Goal</label><textarea id="editProjectGoal" rows="3"></textarea>
+    <div class="row">
+      <div><label>Category</label><select id="editProjectCategory"><option>Home</option><option>Family</option><option>Travel</option><option>Personal</option></select></div>
+      <div><label>Deadline</label><input id="editProjectDeadline" type="date"></div>
+    </div>
+    <div class="row">
+      <div><label>Status</label><select id="editProjectStatus"><option>Active</option><option>Waiting</option><option>Completed</option><option>Archived</option></select></div>
+    </div>
+    <div class="actions split"><button class="dangerbtn" id="deleteProjectBtn">Delete project</button><div><button class="secondary" data-close="editProjectModal">Cancel</button><button class="primary" id="saveProjectChangesBtn">Save</button></div></div>
+  </div>
+</div>
+
+<div class="modal" id="newProjectModal">
+  <div class="modalbox">
+    <div class="modalhead"><h2>New Project</h2><button class="iconbtn" data-close="newProjectModal">×</button></div>
+    <label>Project name</label><input id="projectName" placeholder="e.g. Fall Home Reset">
+    <div class="row">
+      <div><label>Category</label><select id="projectCategory"><option>Home</option><option>Family</option><option>Travel</option><option>Personal</option></select></div>
+      <div><label>Deadline</label><input id="projectDeadline" type="date"></div>
+    </div>
+    <label>Goal</label><textarea id="projectGoal" rows="3" placeholder="What does done look like?"></textarea>
+    <div class="actions"><button class="secondary" data-close="newProjectModal">Cancel</button><button class="primary" id="saveProjectBtn">Create project</button></div>
+  </div>
+</div>
+
+<div class="modal" id="authModal">
+  <div class="modalbox">
+    <div class="modalhead"><div><div class="eyebrow">Cloud Sync</div><h2>Use Life Command Center everywhere</h2></div><button class="iconbtn" data-close="authModal">×</button></div>
+    <p class="eyebrow">Sign in with the same email on your phone and laptop. Your tasks, projects, and inbox will sync.</p>
+    <label>Email</label>
+    <input id="authEmail" type="email" placeholder="you@example.com">
+    <label>Password</label>
+    <input id="authPassword" type="password" placeholder="At least 6 characters">
+    <div class="actions">
+      <button class="secondary" id="signUpBtn">Create account</button>
+      <button class="primary" id="signInBtn">Sign in</button>
+    </div>
+    <div id="authHelp" class="mutedbox" style="margin-top:12px">
+      Cloud sync needs your Supabase project URL and anon key in <code>config.js</code>. Until then, the app keeps working locally.
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="cloud.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
