@@ -35,3 +35,9 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;back
 .cloudfloat.syncing{background:#f5f0df;color:#8b762c}
 .cloudfloat.error{background:var(--dangersoft);color:var(--danger)}
 @media(min-width:801px){.cloudfloat{bottom:20px;right:20px}}
+
+.topactions{display:flex;gap:8px;align-items:center}
+.accountbox{z-index:20;background:#fff}
+#accountBtn,#headerAccountBtn,#mobileCloudBtn{pointer-events:auto!important;position:relative;z-index:50}
+#headerAccountBtn{white-space:nowrap}
+@media(max-width:800px){#headerAccountBtn{display:none}}

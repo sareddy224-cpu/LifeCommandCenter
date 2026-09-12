@@ -35,12 +35,14 @@ function setSyncState(kind,text){
  }
 }
 function updateAccountUI(){
- const email=document.getElementById("accountEmail"), btn=document.getElementById("accountBtn");
- if(!email||!btn)return;
- email.textContent=cloudUser?.email || "Not signed in";
- btn.textContent=cloudUser ? "Sign out" : "Sign in";
+ const email=document.getElementById("accountEmail");
+ const btn=document.getElementById("accountBtn");
  const float=document.getElementById("mobileCloudBtn");
+ const header=document.getElementById("headerAccountBtn");
+ if(email) email.textContent=cloudUser?.email || "Not signed in";
+ if(btn) btn.textContent=cloudUser ? "Sign out" : "Sign in";
  if(float) float.textContent=cloudUser ? "☁️ Synced" : "☁️ Sign in";
+ if(header) header.textContent=cloudUser ? "☁️ Synced" : "☁️ Sign in";
 }
 async function cloudPushNow(){
  if(!window.LCCCloud?.configured || !cloudUser) return;
@@ -85,6 +87,19 @@ async function loadCloudState(){
    }
  }catch(err){console.error(err);setSyncState("error","Sync error");toast("Cloud sync could not load. Local data is still safe.");}
 }
+
+window.LCCAuthUI = {
+  open(){
+    if(typeof cloudUser!=="undefined" && cloudUser){
+      if(typeof pullLatestCloud==="function") pullLatestCloud();
+      if(typeof toast==="function") toast("Already signed in. Refreshing cloud sync.");
+      return;
+    }
+    const modal=document.getElementById("authModal");
+    if(modal) modal.classList.add("show");
+  }
+};
+
 function isoDate(d){ return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10); }
 function addDaysISO(days){ const d=new Date(); d.setDate(d.getDate()+days); return isoDate(d); }
 function parseDate(s){ if(!s) return null; const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
@@ -350,8 +365,8 @@ function recommend(minutes){
  .sort((a,b)=>{const ad=a.dueDate&&a.dueDate<=TODAY?-10:0, bd=b.dueDate&&b.dueDate<=TODAY?-10:0; return ad-bd || priorityRank(a.priority)-priorityRank(b.priority) || a.duration-b.duration;}).slice(0,3);
  document.getElementById("recommendation").innerHTML=choices.length?choices.map(taskHTML).join(""):'<div class="empty">Nothing fits that window. That is allowed. ✨</div>';
 }
-function showModal(id){document.getElementById(id).classList.add("show");}
-function hideModal(id){document.getElementById(id).classList.remove("show");}
+function showModal(id){const el=document.getElementById(id); if(el)el.classList.add("show");}
+function hideModal(id){const el=document.getElementById(id); if(el)el.classList.remove("show");}
 function switchView(id){
  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===id));
  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===id));
@@ -460,22 +475,22 @@ async function initCloud(){
 }
 
 
-document.getElementById("mobileCloudBtn").addEventListener("click",async()=>{
- if(!cloudUser){showModal("authModal");return;}
- setSyncState("syncing","Syncing…");
- await cloudPushNow();
- await pullLatestCloud();
- toast("Cloud sync refreshed.");
-});
 
-document.getElementById("accountBtn").addEventListener("click",async()=>{
+async function handleAccountAction(){
  if(cloudUser){
-   try{await window.LCCCloud.signOut(); cloudUser=null; updateAccountUI(); setSyncState("local","Signed out"); toast("Signed out. Local data stays on this device.");}
-   catch(err){toast(err.message||"Could not sign out.");}
+   try{
+     await window.LCCCloud.signOut();
+     cloudUser=null; updateAccountUI(); clearInterval(cloudPollTimer);
+     setSyncState("local","Signed out");
+     toast("Signed out. Local data stays on this device.");
+   }catch(err){toast(err.message||"Could not sign out.");}
  }else{
    showModal("authModal");
  }
-});
+}
+window.LCCAuthUI.open = handleAccountAction;
+
+document.getElementById("headerAccountBtn")?.addEventListener("click",(e)=>{e.preventDefault(); handleAccountAction();});
 document.getElementById("signUpBtn").addEventListener("click",async()=>{
  const email=document.getElementById("authEmail").value.trim(), password=document.getElementById("authPassword").value;
  try{
@@ -493,3 +508,15 @@ document.getElementById("signInBtn").addEventListener("click",async()=>{
 });
 
 initCloud();
+
+
+function updateAuthHelp(){
+ const help=document.getElementById("authHelp");
+ if(!help)return;
+ if(!window.LCCCloud?.configured){
+   help.innerHTML="Cloud connection did not initialize. Refresh the page. If this remains, the deployed files are incomplete or the Supabase browser library was blocked.";
+ }else{
+   help.textContent="Use the same Life Command Center email and password on every device.";
+ }
+}
+updateAuthHelp();

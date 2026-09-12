@@ -24,7 +24,7 @@
     </nav>
     <div class="accountbox">
       <div id="accountEmail" class="accountemail">Not signed in</div>
-      <button id="accountBtn" class="secondary small">Sign in</button>
+      <button id="accountBtn" class="secondary small" type="button" onclick="window.LCCAuthUI && window.LCCAuthUI.open()">Sign in</button>
     </div>
   </aside>
 
@@ -36,7 +36,10 @@
           <h1 id="greeting">Good evening 👋</h1>
           <div class="eyebrow">Here’s what deserves your attention.</div>
         </div>
-        <button class="primary" data-action="quick-add">+ Quick Add</button>
+        <div class="topactions">
+          <button id="headerAccountBtn" class="secondary" type="button">☁️ Sign in</button>
+          <button class="primary" data-action="quick-add">+ Quick Add</button>
+        </div>
       </div>
 
       <div class="searchbar">
@@ -233,7 +236,7 @@
   </div>
 </div>
 
-<button id="mobileCloudBtn" class="cloudfloat" type="button">☁️ Sign in</button>
+<button id="mobileCloudBtn" class="cloudfloat" type="button" onclick="window.LCCAuthUI && window.LCCAuthUI.open()">☁️ Sign in</button>
 <div class="toast" id="toast"></div>
 <script src="cloud.js"></script>
 <script src="app.js"></script>
