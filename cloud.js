@@ -109,6 +109,15 @@
     }
   }
 
+
+  async function deleteRow(table,id){
+    const user = await currentUser();
+    if(!client || !user) return false;
+    const {error} = await client.from(table).delete().eq("id",String(id));
+    if(error) throw error;
+    return true;
+  }
+
   function onAuthChange(cb){
     if(!client) return ()=>{};
     const {data:{subscription}}=client.auth.onAuthStateChange((_event,session)=>cb(session?.user||null));
@@ -125,6 +134,7 @@
     fetchAll,
     upsertAll,
     deleteMissing,
+    deleteRow,
     onAuthChange
   };
 })();

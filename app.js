@@ -27,22 +27,26 @@ let cloudUser=null;
 
 function setSyncState(kind,text){
  const pill=document.getElementById("syncPill");
- if(!pill)return;
- pill.className="syncpill "+kind;
- pill.textContent=text;
+ if(pill){pill.className="syncpill "+kind; pill.textContent=text;}
+ const float=document.getElementById("mobileCloudBtn");
+ if(float){
+   float.className="cloudfloat "+(kind==="cloud"?"synced":kind);
+   float.textContent=cloudUser ? (kind==="syncing"?"☁️ Syncing…":kind==="error"?"☁️ Sync error":"☁️ Synced") : "☁️ Sign in";
+ }
 }
 function updateAccountUI(){
  const email=document.getElementById("accountEmail"), btn=document.getElementById("accountBtn");
  if(!email||!btn)return;
  email.textContent=cloudUser?.email || "Not signed in";
  btn.textContent=cloudUser ? "Sign out" : "Sign in";
+ const float=document.getElementById("mobileCloudBtn");
+ if(float) float.textContent=cloudUser ? "☁️ Synced" : "☁️ Sign in";
 }
 async function cloudPushNow(){
  if(!window.LCCCloud?.configured || !cloudUser) return;
  try{
    setSyncState("syncing","Syncing…");
    await window.LCCCloud.upsertAll({tasks,projects,inbox});
-   await window.LCCCloud.deleteMissing({tasks,projects,inbox});
    setSyncState("cloud","Synced");
  }catch(err){
    console.error(err); setSyncState("error","Sync error");
@@ -87,7 +91,8 @@ function parseDate(s){ if(!s) return null; const [y,m,d]=s.split("-").map(Number
 function dayDiff(dateStr){ if(!dateStr) return 9999; const a=parseDate(TODAY), b=parseDate(dateStr); return Math.round((b-a)/86400000); }
 function prettyDate(s){ if(!s) return "No date"; const diff=dayDiff(s); if(diff===0)return "Today"; if(diff===1)return "Tomorrow"; if(diff===-1)return "Yesterday"; return parseDate(s).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
 function esc(s=""){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c])); }
-function projectById(id){ return projects.find(p=>p.id===Number(id)); }
+function sameId(a,b){ return String(a)===String(b); }
+function projectById(id){ return projects.find(p=>sameId(p.id,id)); }
 function priorityRank(p){ return ({Critical:0,High:1,Medium:2,Low:3})[p] ?? 4; }
 function taskSort(a,b){ return priorityRank(a.priority)-priorityRank(b.priority) || dayDiff(a.dueDate)-dayDiff(b.dueDate); }
 function isDone(t){ return t.done || t.status==="Completed"; }
@@ -121,7 +126,7 @@ function renderToday(){
  document.getElementById("upcomingTasks").innerHTML=listHTML(upcoming.slice(0,6),"Nothing due in the next two weeks.");
  const radar = projects.filter(p=>p.status==="Active").sort((a,b)=>dayDiff(a.deadline)-dayDiff(b.deadline)).slice(0,4);
  document.getElementById("radar").innerHTML=radar.map(p=>{
-   const openCount=tasks.filter(t=>t.projectId===p.id&&!isDone(t)).length;
+   const openCount=tasks.filter(t=>sameId(t.projectId,p.id)&&!isDone(t)).length;
    return `<button class="radaritem" data-open-project="${p.id}"><b>${esc(p.name)}</b><span>${openCount} open · ${p.deadline?prettyDate(p.deadline):"No deadline"}</span></button>`;
  }).join("") || '<div class="empty">No active projects.</div>';
 }
@@ -161,7 +166,7 @@ function renderTasks(){
  document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter===taskFilter));
 }
 function projectProgress(id){
- const pts=tasks.filter(t=>t.projectId===id);
+ const pts=tasks.filter(t=>sameId(t.projectId,id));
  if(!pts.length)return 0;
  return Math.round(pts.filter(t=>isDone(t)).length/pts.length*100);
 }
@@ -169,7 +174,7 @@ function renderProjects(){
  let ps=[...projects];
  if(searchTerm) ps=ps.filter(p=>(p.name+" "+(p.goal||"")+" "+p.category).toLowerCase().includes(searchTerm));
  document.getElementById("projectList").innerHTML=ps.length?ps.map(p=>{
-  const pct=projectProgress(p.id), open=tasks.filter(t=>t.projectId===p.id&&!isDone(t)).length;
+  const pct=projectProgress(p.id), open=tasks.filter(t=>sameId(t.projectId,p.id)&&!isDone(t)).length;
   return `<button class="project clickable" data-open-project="${p.id}">
    <div class="projecttop"><div><b>${esc(p.name)}</b><div class="meta">${esc(p.goal||"")}</div></div><span class="pill">${esc(p.status)}</span></div>
    <div class="bar"><i style="width:${pct}%"></i></div>
@@ -226,7 +231,7 @@ function processInbox(i){
  }
 }
 function openTask(id){
- const t=tasks.find(x=>x.id===id); if(!t)return;
+ const t=tasks.find(x=>sameId(x.id,id)); if(!t)return;
  document.getElementById("editTaskId").value=t.id;
  document.getElementById("editTaskTitle").value=t.title;
  document.getElementById("editTaskDate").value=t.dueDate||"";
@@ -239,12 +244,12 @@ function openTask(id){
  showModal("taskModal");
 }
 function saveTaskChanges(){
- const id=Number(document.getElementById("editTaskId").value), t=tasks.find(x=>x.id===id); if(!t)return;
+ const id=Number(document.getElementById("editTaskId").value), t=tasks.find(x=>sameId(x.id,id)); if(!t)return;
  const title=document.getElementById("editTaskTitle").value.trim(); if(!title){toast("Task needs a title.");return;}
  t.title=title;
  t.dueDate=document.getElementById("editTaskDate").value||null;
  t.priority=document.getElementById("editTaskPriority").value;
- t.projectId=document.getElementById("editTaskProject").value?Number(document.getElementById("editTaskProject").value):null;
+ t.projectId=document.getElementById("editTaskProject").value||null;
  t.status=document.getElementById("editTaskStatus").value;
  t.done=t.status==="Completed";
  t.category=document.getElementById("editTaskCategory").value;
@@ -252,15 +257,20 @@ function saveTaskChanges(){
  t.notes=document.getElementById("editTaskNotes").value.trim();
  hideModal("taskModal"); persist(); toast("Task updated.");
 }
-function deleteTask(){
- const id=Number(document.getElementById("editTaskId").value);
- tasks=tasks.filter(t=>t.id!==id); hideModal("taskModal"); persist(); toast("Task deleted.");
+async function deleteTask(){
+ const id=document.getElementById("editTaskId").value;
+ tasks=tasks.filter(t=>!sameId(t.id,id)); hideModal("taskModal"); persist();
+ if(cloudUser && window.LCCCloud?.configured){
+   try{await window.LCCCloud.deleteRow("tasks",id); setSyncState("cloud","Synced");}
+   catch(err){console.error(err);setSyncState("error","Sync error");}
+ }
+ toast("Task deleted.");
 }
 
 function openProject(id){
  const p=projectById(id); if(!p)return;
  document.getElementById("projectModalTitle").textContent=p.name;
- const pts=tasks.filter(t=>t.projectId===id).sort(taskSort);
+ const pts=tasks.filter(t=>sameId(t.projectId,id)).sort(taskSort);
  const waiting=pts.filter(t=>isWaiting(t)&&!isDone(t)).length;
  document.getElementById("projectDetail").innerHTML=`
   <div class="project-toolbar">
@@ -294,7 +304,7 @@ function openProjectEditor(id){
  hideModal("projectModal"); showModal("editProjectModal");
 }
 function saveProjectChanges(){
- const id=Number(document.getElementById("editProjectId").value), p=projectById(id); if(!p)return;
+ const id=document.getElementById("editProjectId").value, p=projectById(id); if(!p)return;
  const oldCategory=p.category;
  p.name=document.getElementById("editProjectName").value.trim()||p.name;
  p.goal=document.getElementById("editProjectGoal").value.trim();
@@ -302,15 +312,20 @@ function saveProjectChanges(){
  p.deadline=document.getElementById("editProjectDeadline").value||null;
  p.status=document.getElementById("editProjectStatus").value;
  if(oldCategory!==p.category){
-   tasks.filter(t=>t.projectId===id).forEach(t=>t.category=p.category);
+   tasks.filter(t=>sameId(t.projectId,id)).forEach(t=>t.category=p.category);
  }
  hideModal("editProjectModal"); persist(); openProject(id); toast("Project updated.");
 }
-function deleteProject(){
- const id=Number(document.getElementById("editProjectId").value);
- tasks.forEach(t=>{if(t.projectId===id)t.projectId=null;});
- projects=projects.filter(p=>p.id!==id);
- hideModal("editProjectModal"); persist(); switchView("projects"); toast("Project deleted. Its tasks were kept in All Tasks.");
+async function deleteProject(){
+ const id=document.getElementById("editProjectId").value;
+ tasks.forEach(t=>{if(sameId(t.projectId,id))t.projectId=null;});
+ projects=projects.filter(p=>!sameId(p.id,id));
+ hideModal("editProjectModal"); persist(); switchView("projects");
+ if(cloudUser && window.LCCCloud?.configured){
+   try{await window.LCCCloud.deleteRow("projects",id); setSyncState("cloud","Synced");}
+   catch(err){console.error(err);setSyncState("error","Sync error");}
+ }
+ toast("Project deleted. Its tasks were kept in All Tasks.");
 }
 function saveNewProject(){
  const name=document.getElementById("projectName").value.trim(); if(!name){toast("Give the project a name first.");return;}
@@ -349,14 +364,19 @@ document.addEventListener("click",e=>{
  const viewTarget=e.target.closest("[data-view-target]"); if(viewTarget){switchView(viewTarget.dataset.viewTarget);return;}
  if(e.target.closest("[data-action='quick-add']")){renderProjectOptions();showModal("quickModal");setTimeout(()=>document.getElementById("quickText").focus(),30);return;}
  const close=e.target.closest("[data-close]"); if(close){hideModal(close.dataset.close);return;}
- const toggle=e.target.closest("[data-toggle-task]"); if(toggle){const t=tasks.find(x=>x.id===Number(toggle.dataset.toggleTask)); if(t){t.done=toggle.checked;t.status=t.done?"Completed":"Open";persist();} return;}
- const editTask=e.target.closest("[data-edit-task]"); if(editTask){openTask(Number(editTask.dataset.editTask));return;}
+ const toggle=e.target.closest("[data-toggle-task]"); if(toggle){const t=tasks.find(x=>sameId(x.id,toggle.dataset.toggleTask)); if(t){t.done=toggle.checked;t.status=t.done?"Completed":"Open";persist();} return;}
+ const editTask=e.target.closest("[data-edit-task]"); if(editTask){openTask(editTask.dataset.editTask);return;}
  const proc=e.target.closest("[data-process-inbox]"); if(proc){processInbox(Number(proc.dataset.processInbox));return;}
- const del=e.target.closest("[data-delete-inbox]"); if(del){inbox.splice(Number(del.dataset.deleteInbox),1);persist();return;}
- const proj=e.target.closest("[data-open-project]"); if(proj){openProject(Number(proj.dataset.openProject));return;}
- const editProj=e.target.closest("[data-edit-project]"); if(editProj){openProjectEditor(Number(editProj.dataset.editProject));return;}
+ const del=e.target.closest("[data-delete-inbox]"); if(del){
+   const idx=Number(del.dataset.deleteInbox), item=inbox[idx];
+   inbox.splice(idx,1);persist();
+   if(item?.id && cloudUser && window.LCCCloud?.configured){window.LCCCloud.deleteRow("inbox_items",item.id).catch(console.error);}
+   return;
+ }
+ const proj=e.target.closest("[data-open-project]"); if(proj){openProject(proj.dataset.openProject);return;}
+ const editProj=e.target.closest("[data-edit-project]"); if(editProj){openProjectEditor(editProj.dataset.editProject);return;}
  const addPT=e.target.closest("[data-add-project-task]"); if(addPT){
-   const id=Number(addPT.dataset.addProjectTask), p=projectById(id);
+   const id=addPT.dataset.addProjectTask, p=projectById(id);
    const text=document.getElementById("projectTaskInput").value.trim();
    if(!text){toast("Add a task name first.");return;}
    addTask(text,document.getElementById("projectTaskDate").value||null,document.getElementById("projectTaskPriority").value,id,p.category,document.getElementById("projectTaskStatus").value);
@@ -391,6 +411,35 @@ document.getElementById("dateLabel").textContent=now.toLocaleDateString(undefine
 renderAll();
 
 
+
+let cloudPollTimer=null;
+let cloudPullBusy=false;
+
+async function pullLatestCloud(){
+ if(!cloudUser || !window.LCCCloud?.configured || cloudPullBusy) return;
+ cloudPullBusy=true;
+ try{
+   const remote=await window.LCCCloud.fetchAll();
+   if(remote){
+     tasks=remote.tasks; projects=remote.projects; inbox=remote.inbox;
+     localStorage.setItem("lcc4_tasks",JSON.stringify(tasks));
+     localStorage.setItem("lcc4_projects",JSON.stringify(projects));
+     localStorage.setItem("lcc4_inbox",JSON.stringify(inbox));
+     renderAll();
+     setSyncState("cloud","Synced");
+   }
+ }catch(err){
+   console.error(err); setSyncState("error","Sync error");
+ }finally{cloudPullBusy=false;}
+}
+function startCloudPolling(){
+ clearInterval(cloudPollTimer);
+ if(cloudUser && window.LCCCloud?.configured){
+   cloudPollTimer=setInterval(()=>{ if(document.visibilityState==="visible") pullLatestCloud(); },4000);
+ }
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")pullLatestCloud();});
+
 async function initCloud(){
  if(!window.LCCCloud?.configured){
    setSyncState("local","Local mode");
@@ -400,15 +449,24 @@ async function initCloud(){
  try{
    cloudUser=await window.LCCCloud.currentUser();
    updateAccountUI();
-   if(cloudUser) await loadCloudState();
+   if(cloudUser){ await loadCloudState(); startCloudPolling(); }
    else setSyncState("local","Sign in to sync");
    window.LCCCloud.onAuthChange(async user=>{
      cloudUser=user; updateAccountUI();
-     if(user) await loadCloudState();
-     else setSyncState("local","Sign in to sync");
+     if(user){ await loadCloudState(); startCloudPolling(); }
+     else {clearInterval(cloudPollTimer); setSyncState("local","Sign in to sync");}
    });
  }catch(err){console.error(err);setSyncState("error","Cloud error");}
 }
+
+
+document.getElementById("mobileCloudBtn").addEventListener("click",async()=>{
+ if(!cloudUser){showModal("authModal");return;}
+ setSyncState("syncing","Syncing…");
+ await cloudPushNow();
+ await pullLatestCloud();
+ toast("Cloud sync refreshed.");
+});
 
 document.getElementById("accountBtn").addEventListener("click",async()=>{
  if(cloudUser){
@@ -423,14 +481,14 @@ document.getElementById("signUpBtn").addEventListener("click",async()=>{
  try{
    const data=await window.LCCCloud.signUp(email,password);
    toast("Account created. Check your email if confirmation is required.");
-   if(data.user){cloudUser=data.user; updateAccountUI(); await loadCloudState(); hideModal("authModal");}
+   if(data.user){cloudUser=data.user; updateAccountUI(); await loadCloudState(); startCloudPolling(); hideModal("authModal");}
  }catch(err){toast(err.message||"Could not create account.");}
 });
 document.getElementById("signInBtn").addEventListener("click",async()=>{
  const email=document.getElementById("authEmail").value.trim(), password=document.getElementById("authPassword").value;
  try{
    const data=await window.LCCCloud.signIn(email,password);
-   cloudUser=data.user; updateAccountUI(); await loadCloudState(); hideModal("authModal"); toast("Signed in. Cloud sync is on.");
+   cloudUser=data.user; updateAccountUI(); await loadCloudState(); startCloudPolling(); hideModal("authModal"); toast("Signed in. Cloud sync is on.");
  }catch(err){toast(err.message||"Could not sign in.");}
 });
 
