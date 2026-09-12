@@ -1,13 +1,12 @@
-# Life Command Center v0.6 — Laptop login fix
+# Life Command Center v0.7 — Auth error visibility fix
 
-Fixes the desktop Sign in button doing nothing.
+This build fixes authentication errors being hidden behind Netlify UI.
 
 Changes:
-- Auth modal can be opened through a direct fallback, even if later app rendering has a problem.
-- Added a visible desktop cloud/sign-in button in the Today header.
-- Raised desktop account controls above sidebar layers.
-- Made modal helpers safer.
-- Account UI updates consistently across sidebar, header, and mobile cloud button.
-- Added an auth diagnostic message if the Supabase browser connection fails to initialize.
+- Supabase sign-up/sign-in errors are now shown directly inside the auth modal.
+- The auth modal is layered above app UI.
+- Sign-up validates email/password before calling Supabase.
+- If email confirmation is required, the modal tells you explicitly.
+- Successful auth messages also display in the modal.
 
-Deploy this version to the SAME Netlify site and hard-refresh the laptop page.
+Deploy this version to the same Netlify site, hard-refresh, then try Create account again.

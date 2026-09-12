@@ -95,6 +95,7 @@ window.LCCAuthUI = {
       if(typeof toast==="function") toast("Already signed in. Refreshing cloud sync.");
       return;
     }
+    setAuthMessage("");
     const modal=document.getElementById("authModal");
     if(modal) modal.classList.add("show");
   }
@@ -493,22 +494,51 @@ window.LCCAuthUI.open = handleAccountAction;
 document.getElementById("headerAccountBtn")?.addEventListener("click",(e)=>{e.preventDefault(); handleAccountAction();});
 document.getElementById("signUpBtn").addEventListener("click",async()=>{
  const email=document.getElementById("authEmail").value.trim(), password=document.getElementById("authPassword").value;
+ setAuthMessage("");
+ if(!email){setAuthMessage("Enter your email address first.");return;}
+ if(!password || password.length<6){setAuthMessage("Password must be at least 6 characters.");return;}
  try{
    const data=await window.LCCCloud.signUp(email,password);
-   toast("Account created. Check your email if confirmation is required.");
-   if(data.user){cloudUser=data.user; updateAccountUI(); await loadCloudState(); startCloudPolling(); hideModal("authModal");}
- }catch(err){toast(err.message||"Could not create account.");}
+   if(data.session){
+     cloudUser=data.user; updateAccountUI(); await loadCloudState(); startCloudPolling();
+     setAuthMessage("Account created and signed in.","success");
+     setTimeout(()=>hideModal("authModal"),700);
+   }else{
+     setAuthMessage("Account created. Supabase may require email confirmation. Check your inbox, confirm the email, then come back and use Sign in.","success");
+   }
+ }catch(err){
+   console.error("Supabase sign-up error:",err);
+   setAuthMessage(err?.message || "Could not create account.");
+ }
 });
 document.getElementById("signInBtn").addEventListener("click",async()=>{
  const email=document.getElementById("authEmail").value.trim(), password=document.getElementById("authPassword").value;
+ setAuthMessage("");
+ if(!email){setAuthMessage("Enter your email address first.");return;}
+ if(!password){setAuthMessage("Enter your password first.");return;}
  try{
    const data=await window.LCCCloud.signIn(email,password);
-   cloudUser=data.user; updateAccountUI(); await loadCloudState(); startCloudPolling(); hideModal("authModal"); toast("Signed in. Cloud sync is on.");
- }catch(err){toast(err.message||"Could not sign in.");}
+   cloudUser=data.user; updateAccountUI(); await loadCloudState(); startCloudPolling();
+   setAuthMessage("Signed in. Cloud sync is on.","success");
+   setTimeout(()=>hideModal("authModal"),500);
+ }catch(err){
+   console.error("Supabase sign-in error:",err);
+   setAuthMessage(err?.message || "Could not sign in.");
+ }
 });
 
 initCloud();
 
+
+
+function setAuthMessage(message,kind="error"){
+ const box=document.getElementById("authMessage");
+ if(!box)return;
+ if(!message){box.style.display="none";box.textContent="";box.className="authmessage";return;}
+ box.style.display="block";
+ box.textContent=message;
+ box.className="authmessage"+(kind==="success"?" success":"");
+}
 
 function updateAuthHelp(){
  const help=document.getElementById("authHelp");

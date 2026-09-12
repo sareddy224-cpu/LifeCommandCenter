@@ -41,3 +41,12 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;back
 #accountBtn,#headerAccountBtn,#mobileCloudBtn{pointer-events:auto!important;position:relative;z-index:50}
 #headerAccountBtn{white-space:nowrap}
 @media(max-width:800px){#headerAccountBtn{display:none}}
+
+#authModal{z-index:99999}
+#authModal .modalbox{position:relative;z-index:100000}
+.authmessage{
+  margin-top:12px;padding:12px 14px;border-radius:10px;
+  background:var(--dangersoft);color:var(--danger);
+  font-size:13px;line-height:1.4;border:1px solid rgba(180,60,60,.18)
+}
+.authmessage.success{background:#e7f1e7;color:#4d6e50;border-color:rgba(77,110,80,.18)}
